@@ -1,6 +1,3 @@
-// create a simple express server that listens on port 3000
-// and returns a message "Hello, world!"
-
 const express = require("express");
 const app = express();
 

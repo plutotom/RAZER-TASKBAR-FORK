@@ -53,7 +53,6 @@ const createSettingsWindow = (): void => {
   settingsWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 };
 
-// Example: Listen for battery updates and send data
 function onBatteryUpdate(child: any, data: any) {
   if (child && child.connected) {
     child.send(data + "new stuff " + new Date().toISOString());
@@ -106,9 +105,9 @@ app.on("ready", async () => {
   settingsChanges.on("showPercentage", () => trayManager.updateTrayContents());
   await loadSettings();
 
-  // razerWatcher = new RazerWatcher(trayManager);
-  // razerWatcher.initialize();
-  // razerWatcher.stopAndStart();
+  razerWatcher = new RazerWatcher(trayManager);
+  razerWatcher.initialize();
+  razerWatcher.stopAndStart();
 
   if (isFirstTimeLaunch) {
     createSettingsWindow();

@@ -53,14 +53,6 @@ const createSettingsWindow = (): void => {
   settingsWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 };
 
-function onBatteryUpdate(child: any, data: any) {
-  if (child && child.connected) {
-    child.send(data + "new stuff " + new Date().toISOString());
-  } else {
-    console.log("Child process not connected");
-  }
-}
-
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -69,7 +61,17 @@ app.on("ready", async () => {
   ipcMain.handle("getDevices", () => {
     return razerWatcher.listDevices();
   });
+
   const child = fork(path.join(__dirname, "api.js"));
+
+  // Add error handling for the child process
+  child.on("error", (err) => {
+    console.error("Child process error:", err);
+  });
+
+  child.on("disconnect", () => {
+    console.log("Child process disconnected");
+  });
 
   const trayManager = new TrayManager(
     [
@@ -81,14 +83,25 @@ app.on("ready", async () => {
       { label: "Quit", type: "normal", click: () => quit() },
     ],
     (devices) => {
-      if (child && child.connected) {
-        child.send({
-          type: "deviceUpdate",
-          devices: Array.from(devices.values()),
-        });
+      try {
+        if (child && !child.killed && child.connected) {
+          child.send({
+            type: "deviceUpdate",
+            devices: Array.from(devices.values()),
+          });
+        }
+      } catch (error) {
+        console.error("Error sending message to child process:", error);
       }
     }
   );
+
+  // Add cleanup of child process on quit
+  app.on("before-quit", () => {
+    if (child && !child.killed) {
+      child.kill();
+    }
+  });
 
   let isFirstTimeLaunch = false;
   settingsChanges.on(
